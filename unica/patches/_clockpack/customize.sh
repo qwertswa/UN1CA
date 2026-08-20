@@ -5,7 +5,7 @@ SOURCE_HAS_CLOCKPACK="$(test -n "$(find "$FW_DIR/$SOURCE_FIRMWARE_PATH/system/sy
 TARGET_HAS_CLOCKPACK="$(test -n "$(find "$FW_DIR/$TARGET_FIRMWARE_PATH/system/system/priv-app" -type d -name "ClockPack*")" && echo "true" || echo "false")"
 
 if ! $SOURCE_HAS_CLOCKPACK; then
-    if $TARGET_HAS_CLOCKPACK; then
+    if $TARGET_HAS_CLOCKPACK && [ "$TARGET_COMMON_CONFIG_MDNIE_MODE" -eq "0" ]; then
         DELETE_FROM_WORK_DIR "system" "system/etc/permissions/com.samsung.feature.aodservice_v10.xml"
         DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.app.aodservice.xml"
         DELETE_FROM_WORK_DIR "system" "system/priv-app/AODService_v80"
@@ -15,6 +15,9 @@ if ! $SOURCE_HAS_CLOCKPACK; then
         ADD_TO_WORK_DIR "a17xxx" "system" "system/priv-app/ClockPack_v80" 0 0 755 "u:object_r:system_file:s0"
 
         SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_AOD_ITEM" --delete
+    elif $TARGET_HAS_CLOCKPACK && [ "$TARGET_COMMON_CONFIG_MDNIE_MODE" -ne "0" ]; then
+        SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_CLOCKPACK_ITEM" --delete
+        SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_LOCKSCREEN_CONFIG_SUBDISPLAY_POLICY" "VIRTUAL_DISPLAY,AOD"
     else
         LOG "\033[0;33m! Nothing to do\033[0m"
     fi
