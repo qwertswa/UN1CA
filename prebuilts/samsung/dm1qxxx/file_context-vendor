@@ -17,6 +17,10 @@
 /vendor/etc/vintf/manifest u:object_r:vendor_configs_file:s0
 /vendor/etc/vintf/manifest/vendor\.samsung\.hardware\.securesnap-default\.xml u:object_r:vendor_configs_file:s0
 /vendor/etc/vintf/manifest/vendor\.samsung\.hardware\.snap-default\.xml u:object_r:vendor_configs_file:s0
+/vendor/lib u:object_r:vendor_file:s0
+/vendor/lib/rfsa u:object_r:vendor_file:s0
+/vendor/lib/rfsa/adsp u:object_r:vendor_file:s0
+/vendor/lib/rfsa/adsp/libSnpeHtpV73Skel\.so u:object_r:vendor_file:s0
 /vendor/lib64 u:object_r:vendor_file:s0
 /vendor/lib64/libsnap_compute\.so u:object_r:same_process_hal_file:s0
 /vendor/lib64/libsnap_compute_secure\.so u:object_r:vendor_file:s0
@@ -30,6 +34,13 @@
 /vendor/lib64/libsnaplite_wrapper\.so u:object_r:same_process_hal_file:s0
 /vendor/lib64/libsnaplite_wrapper_secure\.so u:object_r:vendor_file:s0
 /vendor/lib64/libsnapmw\.so u:object_r:vendor_file:s0
+/vendor/lib64/libSNPE\.so u:object_r:same_process_hal_file:s0
+/vendor/lib64/libSnpeCpu\.so u:object_r:vendor_file:s0
+/vendor/lib64/libSnpeGpu\.so u:object_r:same_process_hal_file:s0
+/vendor/lib64/libSnpeHtpV73Stub\.so u:object_r:same_process_hal_file:s0
+/vendor/lib64/libsnpe_dsp_domains_v3\.so u:object_r:same_process_hal_file:s0
+/vendor/lib64/libsnpe_wrapper\.so u:object_r:same_process_hal_file:s0
+/vendor/lib64/libsnpemw\.so u:object_r:vendor_file:s0
 /vendor/lib64/snap u:object_r:vendor_file:s0
 /vendor/lib64/snap/libQnnHtp\.so u:object_r:vendor_file:s0
 /vendor/lib64/snap/libQnnHtpV73Stub\.so u:object_r:vendor_file:s0
