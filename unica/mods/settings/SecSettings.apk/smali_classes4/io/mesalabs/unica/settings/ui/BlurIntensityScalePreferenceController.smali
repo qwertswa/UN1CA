@@ -8,7 +8,7 @@
 
 
 # static fields
-.field public static final KEY_BLUR_INTENSITY_SCALE:Ljava/lang/String; = "persist.sys.unica_blur_scale"
+.field public static final KEY_BLUR_INTENSITY_SCALE:Ljava/lang/String; = "unica_blur_intensity_scale"
 
 .field public static final DEFAULT_VALUE:I = 0x1e
 
@@ -41,7 +41,7 @@
 
     if-eqz v0, :cond_0
 
-    check-cast v0, Landroidx/preference/EditTextPreference;
+    check-cast v0, Landroidx/preference/SecSeekBarPreference;
 
     iget-object v1, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
 
@@ -49,7 +49,7 @@
 
     move-result-object v1
 
-    const-string v2, "persist.sys.unica_blur_scale"
+    const-string v2, "unica_blur_intensity_scale"
 
     const/16 v3, 0x1e
 
@@ -57,11 +57,7 @@
 
     move-result v1
 
-    invoke-static {v1}, Ljava/lang/String;->valueOf(I)Ljava/lang/String;
-
-    move-result-object v1
-
-    invoke-virtual {v0, v1}, Landroidx/preference/EditTextPreference;->setText(Ljava/lang/String;)V
+    invoke-virtual {v0, v1}, Landroidx/preference/SecSeekBarPreference;->setValue(I)V
 
     invoke-virtual {v0, p0}, Landroidx/preference/Preference;->setOnPreferenceChangeListener(Landroidx/preference/Preference$OnPreferenceChangeListener;)V
 
@@ -86,7 +82,7 @@
 
     move-result-object v0
 
-    const-string v1, "persist.sys.unica_blur_scale"
+    const-string v1, "unica_blur_intensity_scale"
 
     const/16 v2, 0x1e
 
@@ -102,45 +98,25 @@
 .end method
 
 .method public onPreferenceChange(Landroidx/preference/Preference;Ljava/lang/Object;)Z
-    .locals 4
+    .locals 3
 
-    move-object v0, p2
+    iget-object v0, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
 
-    check-cast v0, Ljava/lang/String;
+    invoke-virtual {v0}, Landroid/content/Context;->getContentResolver()Landroid/content/ContentResolver;
 
-    :try_start_0
-    invoke-static {v0}, Ljava/lang/Integer;->parseInt(Ljava/lang/String;)I
+    move-result-object v0
+
+    check-cast p2, Ljava/lang/Integer;
+
+    invoke-virtual {p2}, Ljava/lang/Integer;->intValue()I
 
     move-result v1
-    :try_end_0
-    .catch Ljava/lang/NumberFormatException; {:try_start_0 .. :try_end_0} :catch_0
 
-    if-ltz v1, :cond_0
+    const-string v2, "unica_blur_intensity_scale"
 
-    const/16 v2, 0x64
-
-    if-le v1, v2, :cond_1
-
-    :cond_0
-    const/16 v1, 0x1e
-
-    :cond_1
-    iget-object v2, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
-
-    invoke-virtual {v2}, Landroid/content/Context;->getContentResolver()Landroid/content/ContentResolver;
-
-    move-result-object v2
-
-    const-string v3, "persist.sys.unica_blur_scale"
-
-    invoke-static {v2, v3, v1}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
+    invoke-static {v0, v2, v1}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
 
     move-result p0
-
-    return p0
-
-    :catch_0
-    const/4 p0, 0x0
 
     return p0
 .end method
