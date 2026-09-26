@@ -41,7 +41,7 @@
 
     if-eqz v0, :cond_0
 
-    check-cast v0, Landroidx/preference/SecSeekBarPreference;
+    check-cast v0, Landroidx/preference/EditTextPreference;
 
     iget-object v1, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
 
@@ -57,7 +57,13 @@
 
     move-result v1
 
-    invoke-virtual {v0, v1}, Landroidx/preference/SecSeekBarPreference;->setValue(I)V
+    invoke-static {v1}, Ljava/lang/String;->valueOf(I)Ljava/lang/String;
+
+    move-result-object v1
+
+    invoke-virtual {v0, v1}, Landroidx/preference/EditTextPreference;->setText(Ljava/lang/String;)V
+
+    invoke-virtual {v0, v1}, Landroidx/preference/Preference;->setSummary(Ljava/lang/CharSequence;)V
 
     invoke-virtual {v0, p0}, Landroidx/preference/Preference;->setOnPreferenceChangeListener(Landroidx/preference/Preference$OnPreferenceChangeListener;)V
 
@@ -98,25 +104,46 @@
 .end method
 
 .method public onPreferenceChange(Landroidx/preference/Preference;Ljava/lang/Object;)Z
-    .locals 3
+    .locals 4
 
-    iget-object v0, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
+    check-cast p2, Ljava/lang/String;
 
-    invoke-virtual {v0}, Landroid/content/Context;->getContentResolver()Landroid/content/ContentResolver;
+    :try_start_0
+    invoke-static {p2}, Ljava/lang/Integer;->parseInt(Ljava/lang/String;)I
 
-    move-result-object v0
+    move-result v0
+    :try_end_0
+    .catch Ljava/lang/NumberFormatException; {:try_start_0 .. :try_end_0} :catch_0
 
-    check-cast p2, Ljava/lang/Integer;
+    const/16 v1, 0x64
 
-    invoke-virtual {p2}, Ljava/lang/Integer;->intValue()I
+    if-gt v0, v1, :cond_1
 
-    move-result v1
+    if-ltz v0, :cond_1
+
+    iget-object v1, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
+
+    invoke-virtual {v1}, Landroid/content/Context;->getContentResolver()Landroid/content/ContentResolver;
+
+    move-result-object v1
 
     const-string v2, "persist.sys.unica_blur_scale"
 
-    invoke-static {v0, v2, v1}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
+    invoke-static {v1, v2, v0}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
 
-    move-result p0
+    invoke-virtual {p1, p2}, Landroidx/preference/Preference;->setSummary(Ljava/lang/CharSequence;)V
+
+    const/4 p0, 0x1
+
+    return p0
+
+    :cond_1
+    const/4 p0, 0x0
+
+    return p0
+
+    :catch_0
+    const/4 p0, 0x0
 
     return p0
 .end method
