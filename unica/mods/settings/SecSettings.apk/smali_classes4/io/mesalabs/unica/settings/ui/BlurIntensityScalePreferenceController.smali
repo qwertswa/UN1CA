@@ -8,7 +8,7 @@
 
 
 # static fields
-.field public static final KEY_BLUR_INTENSITY_SCALE:Ljava/lang/String; = "unica_blur_intensity_scale"
+.field public static final KEY_BLUR_INTENSITY_SCALE:Ljava/lang/String; = "persist.sys.unica_blur_scale"
 
 .field public static final DEFAULT_VALUE:I = 0x1e
 
@@ -49,7 +49,7 @@
 
     move-result-object v1
 
-    const-string v2, "unica_blur_intensity_scale"
+    const-string v2, "persist.sys.unica_blur_scale"
 
     const/16 v3, 0x1e
 
@@ -82,7 +82,7 @@
 
     move-result-object v0
 
-    const-string v1, "unica_blur_intensity_scale"
+    const-string v1, "persist.sys.unica_blur_scale"
 
     const/16 v2, 0x1e
 
@@ -112,7 +112,7 @@
 
     move-result v1
 
-    const-string v2, "unica_blur_intensity_scale"
+    const-string v2, "persist.sys.unica_blur_scale"
 
     invoke-static {v0, v2, v1}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
 
