@@ -41,7 +41,7 @@
 
     if-eqz v0, :cond_0
 
-    check-cast v0, Landroidx/preference/SeekBarPreference;
+    check-cast v0, Landroidx/preference/EditTextPreference;
 
     iget-object v1, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
 
@@ -57,9 +57,11 @@
 
     move-result v1
 
-    const/4 v2, 0x0
+    invoke-static {v1}, Ljava/lang/String;->valueOf(I)Ljava/lang/String;
 
-    invoke-virtual {v0, v1, v2}, Landroidx/preference/SeekBarPreference;->setValue(IZ)V
+    move-result-object v1
+
+    invoke-virtual {v0, v1}, Landroidx/preference/EditTextPreference;->setText(Ljava/lang/String;)V
 
     invoke-virtual {v0, p0}, Landroidx/preference/Preference;->setOnPreferenceChangeListener(Landroidx/preference/Preference$OnPreferenceChangeListener;)V
 
@@ -100,25 +102,45 @@
 .end method
 
 .method public onPreferenceChange(Landroidx/preference/Preference;Ljava/lang/Object;)Z
-    .locals 3
+    .locals 4
 
-    iget-object v0, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
+    move-object v0, p2
 
-    invoke-virtual {v0}, Landroid/content/Context;->getContentResolver()Landroid/content/ContentResolver;
+    check-cast v0, Ljava/lang/String;
 
-    move-result-object v0
-
-    check-cast p2, Ljava/lang/Integer;
-
-    invoke-virtual {p2}, Ljava/lang/Integer;->intValue()I
+    :try_start_0
+    invoke-static {v0}, Ljava/lang/Integer;->parseInt(Ljava/lang/String;)I
 
     move-result v1
+    :try_end_0
+    .catch Ljava/lang/NumberFormatException; {:try_start_0 .. :try_end_0} :catch_0
 
-    const-string v2, "persist.sys.unica_blur_scale"
+    if-ltz v1, :cond_0
 
-    invoke-static {v0, v2, v1}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
+    const/16 v2, 0x64
+
+    if-le v1, v2, :cond_1
+
+    :cond_0
+    const/16 v1, 0x1e
+
+    :cond_1
+    iget-object v2, p0, Lcom/android/settings/core/BasePreferenceController;->mContext:Landroid/content/Context;
+
+    invoke-virtual {v2}, Landroid/content/Context;->getContentResolver()Landroid/content/ContentResolver;
+
+    move-result-object v2
+
+    const-string v3, "persist.sys.unica_blur_scale"
+
+    invoke-static {v2, v3, v1}, Landroid/provider/Settings$System;->putInt(Landroid/content/ContentResolver;Ljava/lang/String;I)Z
 
     move-result p0
+
+    return p0
+
+    :catch_0
+    const/4 p0, 0x0
 
     return p0
 .end method
