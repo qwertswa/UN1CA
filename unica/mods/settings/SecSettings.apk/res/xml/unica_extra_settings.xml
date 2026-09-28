@@ -9,6 +9,7 @@
     <SecSwitchPreference android:title="@string/unica_secure_ss_title" android:key="unica_secure_ss" settings:controller="io.mesalabs.unica.settings.wm.SecureScreenshotPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_ss_detection_title" android:key="unica_ss_detection" settings:controller="io.mesalabs.unica.settings.wm.CaptureDetectionPreferenceController" />
     <com.samsung.android.settings.widget.SecInsetCategoryPreference />
+    <SecDropDownPreference android:title="@string/unica_screen_resolution_title" android:key="unica_screen_resolution" android:summary="%s" android:entries="@array/unica_resolution_entries" android:entryValues="@array/unica_resolution_values" android:defaultValue="6" settings:controller="io.mesalabs.unica.settings.extra.ScreenResolutionPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_gphotos_title" android:key="unica_gphotos" settings:controller="io.mesalabs.unica.settings.extra.GooglePhotosPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_games_spoof_title" android:key="unica_games_spoof" settings:controller="io.mesalabs.unica.settings.extra.GamesPropsPreferenceController" />
 </PreferenceScreen>
