@@ -18,7 +18,8 @@ if [[ "$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_GALLERY_CONFIG_FACE_C
 fi
 
 # SEC_PRODUCT_FEATURE_SAIV_CONFIG_MIDAS
-if [ ! -f "$WORK_DIR/vendor/etc/midas/moire_detection/moire_detection.tflite" ]; then
+if [ ! -f "$WORK_DIR/vendor/etc/midas/moire_detection/moire_detection.tflite" ] && \
+        [ -f "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/etc/midas/moire_detection/moire_detection.tflite" ]; then
     ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "etc/midas/moire_detection/moire_detection.tflite" 0 0 644 "u:object_r:vendor_configs_file:s0"
 fi
 if [ ! "$(find "$WORK_DIR/vendor/etc/midas" -maxdepth 1 -type f -name "SRIBMQA_aiFiQA*" 2> /dev/null)" ]; then
@@ -41,25 +42,33 @@ TARGET_GALLERY_CONFIG_IMAGE_TAGGER_VERSION="$(GET_FLOATING_FEATURE_CONFIG "$FW_D
 if [[ "$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_GALLERY_CONFIG_IMAGE_TAGGER_VERSION")" == "$SOURCE_GALLERY_CONFIG_IMAGE_TAGGER_VERSION" ]]; then
     if [[ "$TARGET_GALLERY_CONFIG_IMAGE_TAGGER_VERSION" != "$SOURCE_GALLERY_CONFIG_IMAGE_TAGGER_VERSION" ]] || \
             [ "$TARGET_PLATFORM_SDK_VERSION" -lt "$SOURCE_PLATFORM_SDK_VERSION" ]; then
-        if [ -d "$WORK_DIR/system/system/saiv/image_understanding/db/aig" ]; then
-            DELETE_FROM_WORK_DIR "system" "system/saiv/image_understanding/db/aig"
+        if [ -d "$FW_DIR/$SOURCE_FIRMWARE_PATH/system/system/saiv/image_understanding/db/aig" ]; then
+            if [ -d "$WORK_DIR/system/system/saiv/image_understanding/db/aig" ]; then
+                DELETE_FROM_WORK_DIR "system" "system/saiv/image_understanding/db/aig"
+            fi
+            ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "system" "system/saiv/image_understanding/db/aig" 0 0 755 "u:object_r:system_file:s0"
         fi
-        ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "system" "system/saiv/image_understanding/db/aig" 0 0 755 "u:object_r:system_file:s0"
-        if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_classifier" ]; then
-            DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_classifier"
+        if [ -d "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/saiv/image_understanding/db/aig_classifier" ]; then
+            if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_classifier" ]; then
+                DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_classifier"
+            fi
+            ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "saiv/image_understanding/db/aig_classifier" 0 2000 755 "u:object_r:vendor_snap_file:s0"
         fi
-        ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "saiv/image_understanding/db/aig_classifier" 0 2000 755 "u:object_r:vendor_snap_file:s0"
         if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_detector" ]; then
             DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_detector"
         fi
-        if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_document_classifier" ]; then
-            DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_document_classifier"
+        if [ -d "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/saiv/image_understanding/db/aig_document_classifier" ]; then
+            if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_document_classifier" ]; then
+                DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_document_classifier"
+            fi
+            ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "saiv/image_understanding/db/aig_document_classifier" 0 2000 755 "u:object_r:vendor_snap_file:s0"
         fi
-        ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "saiv/image_understanding/db/aig_document_classifier" 0 2000 755 "u:object_r:vendor_snap_file:s0"
-        if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_document_detector" ]; then
-            DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_document_detector"
+        if [ -d "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/saiv/image_understanding/db/aig_document_detector" ]; then
+            if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/aig_document_detector" ]; then
+                DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/aig_document_detector"
+            fi
+            ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "saiv/image_understanding/db/aig_document_detector" 0 2000 755 "u:object_r:vendor_snap_file:s0"
         fi
-        ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "saiv/image_understanding/db/aig_document_detector" 0 2000 755 "u:object_r:vendor_snap_file:s0"
         if [ -d "$WORK_DIR/vendor/saiv/image_understanding/db/srr_interaction" ]; then
             DELETE_FROM_WORK_DIR "vendor" "saiv/image_understanding/db/srr_interaction"
         fi
