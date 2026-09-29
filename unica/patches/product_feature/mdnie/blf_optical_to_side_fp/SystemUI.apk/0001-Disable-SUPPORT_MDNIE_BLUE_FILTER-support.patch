@@ -1,0 +1,79 @@
+From a348fbf1938980b366a9c71413ff96d2890701de Mon Sep 17 00:00:00 2001
+From: Langsdorff <131063968+clangsdorff@users.noreply.github.com>
+Date: Tue, 29 Sep 2026 23:04:10 +0300
+Subject: [PATCH] Disable SUPPORT_MDNIE_BLUE_FILTER support
+
+---
+ .../statusbar/phone/CentralSurfacesImpl.smali | 45 +++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+
+diff --git a/smali_classes3/com/android/systemui/statusbar/phone/CentralSurfacesImpl.smali b/smali_classes3/com/android/systemui/statusbar/phone/CentralSurfacesImpl.smali
+index b5dea37..9df5fe5 100644
+--- a/smali_classes3/com/android/systemui/statusbar/phone/CentralSurfacesImpl.smali
++++ b/smali_classes3/com/android/systemui/statusbar/phone/CentralSurfacesImpl.smali
+@@ -277,6 +277,8 @@
+ 
+ .field public mReportRejectedTouch:Landroid/view/View;
+ 
++.field public final mSBlueLightFilterTileSWLazy:Ldagger/Lazy;
++
+ .field public final mScreenLifecycle:Lcom/android/systemui/keyguard/ScreenLifecycle;
+ 
+ .field public final mScreenObserver:Lcom/android/systemui/statusbar/phone/CentralSurfacesImpl$10;
+@@ -1621,6 +1623,10 @@
+     iput-object p1, p0, Lcom/android/systemui/statusbar/phone/CentralSurfacesImpl;->mKeyguardFoldController:Lcom/android/systemui/keyguard/KeyguardFoldController;
+ 
+     :cond_5
++    move-object/from16 p1, p119
++
++    iput-object p1, p0, Lcom/android/systemui/statusbar/phone/CentralSurfacesImpl;->mSBlueLightFilterTileSWLazy:Ldagger/Lazy;
++
+     sget-boolean p1, Lcom/android/systemui/BasicRune;->AI_AGENT_EFFECT:Z
+ 
+     if-eqz p1, :cond_6
+@@ -5707,6 +5713,45 @@
+ 
+     invoke-virtual {v11, v9, v4, v12, v10}, Lcom/android/systemui/broadcast/BroadcastDispatcher;->registerReceiver(Landroid/content/BroadcastReceiver;Landroid/content/IntentFilter;Ljava/util/concurrent/Executor;Landroid/os/UserHandle;)V
+ 
++    iget-object v4, v1, Lcom/android/systemui/statusbar/phone/CentralSurfacesImpl;->mSBlueLightFilterTileSWLazy:Ldagger/Lazy;
++
++    if-eqz v4, :cond_blf_sw
++
++    invoke-interface {v4}, Ldagger/Lazy;->get()Ljava/lang/Object;
++
++    move-result-object v9
++
++    check-cast v9, Lcom/android/systemui/statusbar/CommandQueue$Callbacks;
++
++    invoke-virtual {v5, v9}, Lcom/android/systemui/statusbar/CommandQueue;->removeCallback(Lcom/android/systemui/statusbar/CommandQueue$Callbacks;)V
++
++    invoke-interface {v4}, Ldagger/Lazy;->get()Ljava/lang/Object;
++
++    move-result-object v9
++
++    check-cast v9, Lcom/android/systemui/statusbar/CommandQueue$Callbacks;
++
++    invoke-virtual {v5, v9}, Lcom/android/systemui/statusbar/CommandQueue;->addCallback(Lcom/android/systemui/statusbar/CommandQueue$Callbacks;)V
++
++    const-string/jumbo v9, "persist.sys.is_in_maintenance_mode"
++
++    const/4 v13, 0x0
++
++    invoke-static {v9, v13}, Landroid/os/SystemProperties;->getBoolean(Ljava/lang/String;Z)Z
++
++    move-result v9
++
++    if-nez v9, :cond_blf_sw
++
++    invoke-interface {v4}, Ldagger/Lazy;->get()Ljava/lang/Object;
++
++    move-result-object v4
++
++    check-cast v4, Lcom/android/systemui/qp/qs/tiles/SBlueLightFilterSWTile;
++
++    invoke-virtual {v4}, Lcom/android/systemui/qp/qs/tiles/SBlueLightFilterSWTile;->setBlueLightFilterMode()V
++
++    :cond_blf_sw
+     iget-object v4, v0, Lcom/android/systemui/shade/NotificationShadeWindowControllerImpl;->mShadeWindowLayoutParams:Landroid/view/WindowManager$LayoutParams;
+ 
+     iput-object v4, v0, Lcom/android/systemui/shade/NotificationShadeWindowControllerImpl;->mLp:Landroid/view/WindowManager$LayoutParams;

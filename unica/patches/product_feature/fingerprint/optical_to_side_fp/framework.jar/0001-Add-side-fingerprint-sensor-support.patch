@@ -1,0 +1,128 @@
+From b6ea06b3494c3fc7c441762ab16e4a67903c38b2 Mon Sep 17 00:00:00 2001
+From: Langsdorff <131063968+clangsdorff@users.noreply.github.com>
+Date: Tue, 29 Sep 2026 23:04:05 +0300
+Subject: [PATCH] Add side fingerprint sensor support
+
+---
+ .../fingerprint/FingerprintManager.smali      |  4 ++--
+ .../HidlFingerprintSensorConfig.smali         | 20 ++++++++-----------
+ ...emFingerprintManager$Characteristics.smali |  2 +-
+ .../com/samsung/android/rune/InputRune.smali  |  4 ++--
+ 4 files changed, 13 insertions(+), 17 deletions(-)
+
+diff --git a/smali_classes2/android/hardware/fingerprint/FingerprintManager.smali b/smali_classes2/android/hardware/fingerprint/FingerprintManager.smali
+index 2a2a517..9a8f3d6 100644
+--- a/smali_classes2/android/hardware/fingerprint/FingerprintManager.smali
++++ b/smali_classes2/android/hardware/fingerprint/FingerprintManager.smali
+@@ -1193,7 +1193,7 @@
+ .method public static blacklist semGetSensorPosition()I
+     .locals 1
+ 
+-    const/4 v0, 0x2
++    const/4 v0, 0x4
+ 
+     return v0
+ .end method
+@@ -1201,7 +1201,7 @@
+ .method public static blacklist semGetTransitionEffectValue()I
+     .locals 1
+ 
+-    const/4 v0, 0x1
++    const/4 v0, -0x1
+ 
+     return v0
+ .end method
+diff --git a/smali_classes2/android/hardware/fingerprint/HidlFingerprintSensorConfig.smali b/smali_classes2/android/hardware/fingerprint/HidlFingerprintSensorConfig.smali
+index cc53932..8c3835c 100644
+--- a/smali_classes2/android/hardware/fingerprint/HidlFingerprintSensorConfig.smali
++++ b/smali_classes2/android/hardware/fingerprint/HidlFingerprintSensorConfig.smali
+@@ -74,7 +74,7 @@
+ .end method
+ 
+ .method private blacklist mapHidlToAidlSensorConfiguration(Landroid/content/Context;)V
+-    .locals 4
++    .locals 3
+ 
+     new-instance v0, Landroid/hardware/biometrics/common/CommonProps;
+ 
+@@ -140,17 +140,17 @@
+ 
+     move-result v1
+ 
+-    if-eqz v1, :cond_4
++    if-eqz v1, :cond_3
+ 
+-    if-eq v1, v0, :cond_3
++    if-eq v1, v0, :cond_2
+ 
+     const/4 v2, 0x2
+ 
+-    const/4 v3, 0x3
++    if-eq v1, v2, :cond_4
+ 
+-    if-eq v1, v2, :cond_2
++    const/4 v2, 0x3
+ 
+-    if-eq v1, v3, :cond_1
++    if-eq v1, v2, :cond_1
+ 
+     const/4 v0, 0x4
+ 
+@@ -169,20 +169,16 @@
+     goto :goto_0
+ 
+     :cond_2
+-    iput-byte v3, p0, Landroid/hardware/fingerprint/HidlFingerprintSensorConfig;->sensorType:B
+-
+-    goto :goto_0
+-
+-    :cond_3
+     const/4 v0, 0x5
+ 
+     iput-byte v0, p0, Landroid/hardware/fingerprint/HidlFingerprintSensorConfig;->sensorType:B
+ 
+     goto :goto_0
+ 
+-    :cond_4
++    :cond_3
+     iput-byte p1, p0, Landroid/hardware/fingerprint/HidlFingerprintSensorConfig;->sensorType:B
+ 
++    :cond_4
+     :goto_0
+     invoke-direct {p0, p1, p1, p1}, Landroid/hardware/fingerprint/HidlFingerprintSensorConfig;->setSensorLocation(III)V
+ 
+diff --git a/smali_classes6/com/samsung/android/bio/fingerprint/SemFingerprintManager$Characteristics.smali b/smali_classes6/com/samsung/android/bio/fingerprint/SemFingerprintManager$Characteristics.smali
+index 698c562..fc69e53 100644
+--- a/smali_classes6/com/samsung/android/bio/fingerprint/SemFingerprintManager$Characteristics.smali
++++ b/smali_classes6/com/samsung/android/bio/fingerprint/SemFingerprintManager$Characteristics.smali
+@@ -94,7 +94,7 @@
+ .method public whitelist getSensorType()I
+     .locals 0
+ 
+-    const/4 p0, 0x2
++    const/4 p0, 0x1
+ 
+     return p0
+ .end method
+diff --git a/smali_classes6/com/samsung/android/rune/InputRune.smali b/smali_classes6/com/samsung/android/rune/InputRune.smali
+index 5183559..9b14367 100644
+--- a/smali_classes6/com/samsung/android/rune/InputRune.smali
++++ b/smali_classes6/com/samsung/android/rune/InputRune.smali
+@@ -627,7 +627,7 @@
+ 
+     sput-boolean v1, Lcom/samsung/android/rune/InputRune;->PWM_SKT_PHONE_RELAX_MODE:Z
+ 
+-    sput-boolean v0, Lcom/samsung/android/rune/InputRune;->PWM_FINGERPRINT_SIDE_TOUCH:Z
++    sput-boolean v4, Lcom/samsung/android/rune/InputRune;->PWM_FINGERPRINT_SIDE_TOUCH:Z
+ 
+     invoke-static {}, Lcom/samsung/android/feature/SemFloatingFeature;->getInstance()Lcom/samsung/android/feature/SemFloatingFeature;
+ 
+@@ -751,7 +751,7 @@
+ 
+     sput-boolean v1, Lcom/samsung/android/rune/InputRune;->PWM_QUICK_LAUNCH_CAMERA:Z
+ 
+-    sput-boolean v0, Lcom/samsung/android/rune/InputRune;->PWM_SKIP_TOO_FAST_DOUBLE_PRESS:Z
++    sput-boolean v4, Lcom/samsung/android/rune/InputRune;->PWM_SKIP_TOO_FAST_DOUBLE_PRESS:Z
+ 
+     sput-boolean v0, Lcom/samsung/android/rune/InputRune;->KNOX_CAPTURE_XCOVER_OR_TOP_KEY:Z
+ 

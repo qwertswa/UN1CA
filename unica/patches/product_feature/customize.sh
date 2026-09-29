@@ -41,11 +41,13 @@ if [[ "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" != "$TARGET_PRODUCT_SHIPPING_API_LEVE
         "<init>()V" \
         "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" \
         "$TARGET_PRODUCT_SHIPPING_API_LEVEL"
-    SMALI_PATCH "system" "system/framework/services.jar" \
-        "smali/com/android/server/knox/dar/ddar/ta/TAProxy.smali" "replace" \
-        "updateServiceHolder(Z)V" \
-        "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" \
-        "$TARGET_PRODUCT_SHIPPING_API_LEVEL"
+    if [ -f "$APKTOOL_DIR/system/framework/services.jar/smali/com/android/server/knox/dar/ddar/ta/TAProxy.smali" ]; then
+        SMALI_PATCH "system" "system/framework/services.jar" \
+            "smali/com/android/server/knox/dar/ddar/ta/TAProxy.smali" "replace" \
+            "updateServiceHolder(Z)V" \
+            "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" \
+            "$TARGET_PRODUCT_SHIPPING_API_LEVEL"
+    fi
     SMALI_PATCH "system" "system/framework/services.jar" \
         "smali/com/android/server/SystemServer.smali" "replace" \
         "startOtherServices(Lcom/android/server/utils/TimingsTraceAndSlog;)V" \
@@ -276,6 +278,7 @@ else
 fi
 
 # SEC_PRODUCT_FEATURE_FINGERPRINT_CONFIG_SENSOR
+OPTICAL_TO_SIDE_FP=false
 if [[ "$SOURCE_FINGERPRINT_CONFIG_SENSOR" != "$TARGET_FINGERPRINT_CONFIG_SENSOR" ]]; then
     SMALI_PATCH "system" "system/framework/framework.jar" \
         "smali_classes6/com/samsung/android/bio/fingerprint/SemFingerprintManager.smali" "replace" \
@@ -418,6 +421,52 @@ if [[ "$SOURCE_FINGERPRINT_CONFIG_SENSOR" != "$TARGET_FINGERPRINT_CONFIG_SENSOR"
                 # TODO handle this condition
                 LOG_MISSING_PATCHES "SOURCE_FINGERPRINT_CONFIG_SENSOR" "TARGET_FINGERPRINT_CONFIG_SENSOR"
             fi
+        elif [[ "$(GET_FINGERPRINT_SENSOR_TYPE "$SOURCE_FINGERPRINT_CONFIG_SENSOR")" == "optical" ]] && \
+                [[ "$(GET_FINGERPRINT_SENSOR_TYPE "$TARGET_FINGERPRINT_CONFIG_SENSOR")" == "side" ]]; then
+            SOURCE_FINGERPRINT_CONFIG_SENSOR="google_touch_side,navi=1"
+            OPTICAL_TO_SIDE_FP=true
+
+            ADD_TO_WORK_DIR "b4qxxx" "system" "system/priv-app/BiometricSetting/BiometricSetting.apk" 0 0 644 "u:object_r:system_file:s0"
+            APPLY_PATCH "system" "system/priv-app/BiometricSetting/BiometricSetting.apk" \
+                "$MODPATH/fingerprint/side_fp/BiometricSetting.apk/0001-Add-FEATURE_FINGERPRINT_JDM_HAL-support.patch"
+
+            # SecSettings.apk patch expects the target value in FingerprintSettingsUtils (google_touch_side,settings=3,navi=1)
+            APPLY_PATCH "system" "system/framework/framework.jar" \
+                "$MODPATH/fingerprint/optical_to_side_fp/framework.jar/0001-Add-side-fingerprint-sensor-support.patch"
+            APPLY_PATCH "system" "system/framework/services.jar" \
+                "$MODPATH/fingerprint/optical_to_side_fp/services.jar/0001-Add-side-fingerprint-sensor-support.patch"
+            APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
+                "$MODPATH/fingerprint/optical_to_side_fp/SecSettings.apk/0001-Add-side-fingerprint-sensor-support.patch"
+            APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
+                "$MODPATH/fingerprint/optical_to_side_fp/SystemUI.apk/0001-Add-side-fingerprint-sensor-support.patch"
+
+            if [[ "$TARGET_FINGERPRINT_CONFIG_SENSOR" == *"navi=1"* ]]; then
+                LOG "- Enabling FP_FEATURE_GESTURE_MODE:Z in /system/system/framework/services.jar/smali/com/android/server/biometrics/SemBiometricFeature.smali"
+                SMALI_PATCH "system" "system/framework/services.jar" \
+                    "smali/com/android/server/biometrics/SemBiometricFeature.smali" "replace" \
+                    "<clinit>()V" \
+                    "sput-boolean v3, Lcom/android/server/biometrics/SemBiometricFeature;->FP_FEATURE_GESTURE_MODE:Z" \
+                    "sput-boolean v2, Lcom/android/server/biometrics/SemBiometricFeature;->FP_FEATURE_GESTURE_MODE:Z" \
+                    > /dev/null
+            fi
+            if [[ "$TARGET_FINGERPRINT_CONFIG_SENSOR" == *"swipe_enroll"* ]]; then
+                LOG "- Enabling FP_FEATURE_SWIPE_ENROLL:Z in /system/system/framework/services.jar/smali/com/android/server/biometrics/SemBiometricFeature.smali"
+                SMALI_PATCH "system" "system/framework/services.jar" \
+                    "smali/com/android/server/biometrics/SemBiometricFeature.smali" "replace" \
+                    "<clinit>()V" \
+                    "sput-boolean v3, Lcom/android/server/biometrics/SemBiometricFeature;->FP_FEATURE_SWIPE_ENROLL:Z" \
+                    "sput-boolean v2, Lcom/android/server/biometrics/SemBiometricFeature;->FP_FEATURE_SWIPE_ENROLL:Z" \
+                    > /dev/null
+            fi
+            if [[ "$TARGET_FINGERPRINT_CONFIG_SENSOR" == *"wof_off"* ]]; then
+                LOG "- Enabling FP_FEATURE_WOF_OPTION_DEFAULT_OFF:Z in /system/system/framework/services.jar/smali/com/android/server/biometrics/SemBiometricFeature.smali"
+                SMALI_PATCH "system" "system/framework/services.jar" \
+                    "smali/com/android/server/biometrics/SemBiometricFeature.smali" "replace" \
+                    "<clinit>()V" \
+                    "sput-boolean v3, Lcom/android/server/biometrics/SemBiometricFeature;->FP_FEATURE_WOF_OPTION_DEFAULT_OFF:Z" \
+                    "sput-boolean v2, Lcom/android/server/biometrics/SemBiometricFeature;->FP_FEATURE_WOF_OPTION_DEFAULT_OFF:Z" \
+                    > /dev/null
+            fi
         else
             # TODO handle this condition
             LOG_MISSING_PATCHES "SOURCE_FINGERPRINT_CONFIG_SENSOR" "TARGET_FINGERPRINT_CONFIG_SENSOR"
@@ -430,6 +479,40 @@ if [[ "$SOURCE_FINGERPRINT_CONFIG_SENSOR" != "$TARGET_FINGERPRINT_CONFIG_SENSOR"
             "<init>(Lcom/samsung/android/biometrics/app/setting/BiometricsUIService;)V" \
             "$SOURCE_FINGERPRINT_CONFIG_SENSOR" \
             "$TARGET_FINGERPRINT_CONFIG_SENSOR"
+    fi
+fi
+
+# SEC_PRODUCT_FEATURE_COMMON_SUPPORT_MDNIE_BLUE_FILTER
+if [ "$SOURCE_COMMON_CONFIG_MDNIE_MODE" -ne "0" ]; then
+    if [ "$TARGET_COMMON_CONFIG_MDNIE_MODE" -eq "0" ]; then
+        ADD_TO_WORK_DIR "gta9pxxx" "system" "system/priv-app/BlueLightFilter/BlueLightFilter.apk" 0 0 644 "u:object_r:system_file:s0"
+        APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
+             "$MODPATH/mdnie/blf/SecSettings.apk/0001-Disable-SUPPORT_MDNIE_BLUE_FILTER-support.patch"
+        APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
+            "$MODPATH/mdnie/blf/SystemUI.apk/0001-Disable-SUPPORT_MDNIE_BLUE_FILTER-support.patch"
+        if [[ "$(GET_FINGERPRINT_SENSOR_TYPE "$TARGET_FINGERPRINT_CONFIG_SENSOR")" == "optical" ]]; then
+            APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
+                "$MODPATH/mdnie/blf_optical_fod/SystemUI.apk/0001-Disable-SUPPORT_MDNIE_BLUE_FILTER-support.patch"
+        elif [[ "$(GET_FINGERPRINT_SENSOR_TYPE "$TARGET_FINGERPRINT_CONFIG_SENSOR")" == "side" ]]; then
+            if $OPTICAL_TO_SIDE_FP; then
+                APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
+                    "$MODPATH/mdnie/blf_optical_to_side_fp/SystemUI.apk/0001-Disable-SUPPORT_MDNIE_BLUE_FILTER-support.patch"
+            else
+                APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
+                    "$MODPATH/mdnie/blf_side_fp/SystemUI.apk/0001-Disable-SUPPORT_MDNIE_BLUE_FILTER-support.patch"
+            fi
+        elif [[ "$(GET_FINGERPRINT_SENSOR_TYPE "$TARGET_FINGERPRINT_CONFIG_SENSOR")" == "ultrasonic" ]]; then
+            ABORT "TARGET_COMMON_SUPPORT_MDNIE_BLUE_FILTER is not supported on targets with an ultrasonic fingerprint sensor"
+        fi
+    fi
+else
+    if [ "$TARGET_COMMON_CONFIG_MDNIE_MODE" -ne "0" ]; then
+        # TODO handle this condition
+        # shellcheck disable=SC2034
+        SOURCE_COMMON_SUPPORT_MDNIE_BLUE_FILTER=false
+        # shellcheck disable=SC2034
+        TARGET_COMMON_SUPPORT_MDNIE_BLUE_FILTER=true
+        LOG_MISSING_PATCHES "SOURCE_COMMON_SUPPORT_MDNIE_BLUE_FILTER" "TARGET_COMMON_SUPPORT_MDNIE_BLUE_FILTER"
     fi
 fi
 
@@ -747,9 +830,11 @@ else
 fi
 
 # SEC_PRODUCT_FEATURE_SECURITY_SUPPORT_STRONGBOX
+SOURCE_FIRMWARE_PATH="$(cut -d "/" -f 1 -s <<< "$SOURCE_FIRMWARE")_$(cut -d "/" -f 2 -s <<< "$SOURCE_FIRMWARE")"
 TARGET_FIRMWARE_PATH="$(cut -d "/" -f 1 -s <<< "$TARGET_FIRMWARE")_$(cut -d "/" -f 2 -s <<< "$TARGET_FIRMWARE")"
 
-if [ ! -f "$FW_DIR/$TARGET_FIRMWARE_PATH/vendor/etc/permissions/android.hardware.strongbox_keystore.xml" ]; then
+if [ -f "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/etc/permissions/android.hardware.strongbox_keystore.xml" ] && \
+        [ ! -f "$FW_DIR/$TARGET_FIRMWARE_PATH/vendor/etc/permissions/android.hardware.strongbox_keystore.xml" ]; then
     SMALI_PATCH "system" "system/framework/framework.jar" \
         "smali_classes6/com/samsung/android/service/DeviceIDProvisionService/DeviceIDProvisionManager\$DeviceIDProvisionWorker.smali" "return" \
         "isSupportStrongboxDeviceID()Z" \
@@ -945,6 +1030,42 @@ if [[ "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" != "$TARGET_WLAN_CONFIG_C
             APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
                 "$MODPATH/wifi/ape_service/SecSettings.apk/0001-Disable-APE_SERVICE-support.patch"
         fi
+    elif [[ "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" != "0" ]] && \
+            [[ "$TARGET_WLAN_CONFIG_CONNECTION_PERSONALIZATION" == "0" ]] && \
+            [[ "$SOURCE_WLAN_CONFIG_DYNAMIC_SWITCH" == "$TARGET_WLAN_CONFIG_DYNAMIC_SWITCH" ]] && \
+            [[ "$SOURCE_WLAN_SUPPORT_APE_SERVICE" == "$TARGET_WLAN_SUPPORT_APE_SERVICE" ]]; then
+        DECODE_APK "system" "system/framework/semwifi-service.jar"
+
+        INJECTOR="$APKTOOL_DIR/system/framework/semwifi-service.jar/smali/com/samsung/android/server/wifi/SemWifiInjector.smali"
+        LOG "- Disabling ConnectionPersonalizer in /system/system/framework/semwifi-service.jar/smali/com/samsung/android/server/wifi/SemWifiInjector.smali"
+        # its string register is shared with SemL4sController, so override it right before its own parseInt
+        awk '
+            { line[NR] = $0 }
+            /"Conn\.Personalizer"/ { target = NR }
+            END {
+                for (i = target; i > 0 && target; i--) {
+                    if (line[i] ~ /Ljava\/lang\/Integer;->parseInt/) {
+                        match(line[i], /\{[vp][0-9]+\}/)
+                        reg = substr(line[i], RSTART + 1, RLENGTH - 2)
+                        at = i
+                        break
+                    }
+                }
+                for (i = 1; i <= NR; i++) {
+                    if (i == at) {
+                        print "    const-string " reg ", \"0\""
+                        print ""
+                    }
+                    print line[i]
+                }
+            }
+        ' "$INJECTOR" > "$INJECTOR.tmp"
+        if cmp -s "$INJECTOR.tmp" "$INJECTOR"; then
+            rm -f "$INJECTOR.tmp"
+            ABORT "Failed to disable ConnectionPersonalizer in /system/system/framework/semwifi-service.jar"
+        fi
+        mv -f "$INJECTOR.tmp" "$INJECTOR"
+        unset INJECTOR
     else
         # TODO handle these conditions
         LOG_MISSING_PATCHES "SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" "TARGET_WLAN_CONFIG_CONNECTION_PERSONALIZATION" || true
@@ -1228,5 +1349,5 @@ elif $SOURCE_WLAN_SUPPORT_WIFI_TO_CELLULAR && ! $TARGET_WLAN_SUPPORT_WIFI_TO_CEL
         "false"
 fi
 
-unset TARGET_FIRMWARE_PATH
+unset SOURCE_FIRMWARE_PATH TARGET_FIRMWARE_PATH OPTICAL_TO_SIDE_FP
 unset -f GET_FINGERPRINT_SENSOR_TYPE LOG_MISSING_PATCHES
