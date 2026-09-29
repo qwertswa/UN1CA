@@ -99,7 +99,8 @@ SOURCE_FILE_ATTR="${SOURCE_FILE_ATTR//\//\\\/}"
 LOG "- Replacing SourceFile attribute in /system/system/framework/services.jar"
 find "$APKTOOL_DIR/system/framework/services.jar" -type f -name "*.smali" -print0 \
     | xargs -0 -I "{}" -P "$(nproc)" sed -i "s/^\.source.*/\.source \"SourceFile\"/g" "{}"
-if [[ "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" != "$TARGET_PRODUCT_SHIPPING_API_LEVEL" ]]; then
+if [[ "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" != "$TARGET_PRODUCT_SHIPPING_API_LEVEL" ]] && \
+        [ -f "$APKTOOL_DIR/system/framework/services.jar/smali/com/android/server/knox/dar/ddar/ta/TAProxy.smali" ]; then
     SMALI_PATCH "system" "system/framework/services.jar" \
         "smali/com/android/server/knox/dar/ddar/ta/TAProxy.smali" "replace" \
         "updateServiceHolder(Z)V" \
@@ -108,35 +109,42 @@ if [[ "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" != "$TARGET_PRODUCT_SHIPPING_API_LEVE
         > /dev/null
 fi
 
+DECODE_APK "system" "system/framework/framework.jar"
+CORE_RUNE="$APKTOOL_DIR/system/framework/framework.jar/smali_classes6/com/samsung/android/rune/CoreRune.smali"
+
 # SEC_PRODUCT_FEATURE_KNOX_SUPPORT_SDP
-APPLY_PATCH "system" "system/framework/framework.jar" \
-    "$MODPATH/sdp/framework.jar/0001-Nuke-Knox-SDP.patch"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/sdp/services.jar/0001-Nuke-Knox-SDP.patch"
+if grep -q "KNOX_SUPPORT_DAR_SDP:Z = true" "$CORE_RUNE"; then
+    APPLY_PATCH "system" "system/framework/framework.jar" \
+        "$MODPATH/sdp/framework.jar/0001-Nuke-Knox-SDP.patch"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/sdp/services.jar/0001-Nuke-Knox-SDP.patch"
+fi
 
 # SEC_PRODUCT_FEATURE_KNOX_SUPPORT_DUAL_DAR
-APPLY_PATCH "system" "system/app/Traceur/Traceur.apk" \
-    "$MODPATH/ddar/Traceur.apk/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/framework/framework.jar" \
-    "$MODPATH/ddar/framework.jar/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/framework/framework.jar" \
-    "$MODPATH/ddar/framework.jar/0002-Nuke-MDF.patch"
-APPLY_PATCH "system" "system/framework/knoxsdk.jar" \
-    "$MODPATH/ddar/knoxsdk.jar/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/ddar/services.jar/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/priv-app/DeviceDiagnostics/DeviceDiagnostics.apk" \
-    "$MODPATH/ddar/DeviceDiagnostics.apk/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/priv-app/KnoxCore/KnoxCore.apk" \
-    "$MODPATH/ddar/KnoxCore.apk/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/priv-app/ManagedProvisioning/ManagedProvisioning.apk" \
-    "$MODPATH/ddar/ManagedProvisioning.apk/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "$MODPATH/ddar/SecSettings.apk/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" \
-    "$MODPATH/ddar/SecSettingsIntelligence.apk/0001-Nuke-Knox-DualDAR.patch"
-APPLY_PATCH "system_ext" "priv-app/StorageManager/StorageManager.apk" \
-    "$MODPATH/ddar/StorageManager.apk/0001-Nuke-Knox-DualDAR.patch"
+if grep -q "KNOX_SUPPORT_DAR_DUAL:Z = true" "$CORE_RUNE"; then
+    APPLY_PATCH "system" "system/app/Traceur/Traceur.apk" \
+        "$MODPATH/ddar/Traceur.apk/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/framework/framework.jar" \
+        "$MODPATH/ddar/framework.jar/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/framework/framework.jar" \
+        "$MODPATH/ddar/framework.jar/0002-Nuke-MDF.patch"
+    APPLY_PATCH "system" "system/framework/knoxsdk.jar" \
+        "$MODPATH/ddar/knoxsdk.jar/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/ddar/services.jar/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/priv-app/DeviceDiagnostics/DeviceDiagnostics.apk" \
+        "$MODPATH/ddar/DeviceDiagnostics.apk/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/priv-app/KnoxCore/KnoxCore.apk" \
+        "$MODPATH/ddar/KnoxCore.apk/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/priv-app/ManagedProvisioning/ManagedProvisioning.apk" \
+        "$MODPATH/ddar/ManagedProvisioning.apk/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
+        "$MODPATH/ddar/SecSettings.apk/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" \
+        "$MODPATH/ddar/SecSettingsIntelligence.apk/0001-Nuke-Knox-DualDAR.patch"
+    APPLY_PATCH "system_ext" "priv-app/StorageManager/StorageManager.apk" \
+        "$MODPATH/ddar/StorageManager.apk/0001-Nuke-Knox-DualDAR.patch"
+fi
 
 # SEC_PRODUCT_FEATURE_KNOX_SUPPORT_HDM
 DECODE_APK "system" "system/framework/knoxsdk.jar"
@@ -183,8 +191,13 @@ if [[ "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" != "$TARGET_PRODUCT_SHIPPING_API_LEVE
         > /dev/null
 fi
 # TODO nuke HdmVendorController.smali
-APPLY_PATCH "system" "system/framework/services.jar" \
-    "$MODPATH/hdm/services.jar/0001-Nuke-Knox-HDM.patch"
+if grep -q "KNOX_SUPPORT_DAR_SDP_OR_DUAL:Z = true" "$CORE_RUNE"; then
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/hdm/services.jar/0001-Nuke-Knox-HDM.patch"
+else
+    APPLY_PATCH "system" "system/framework/services.jar" \
+        "$MODPATH/hdm_nodar/services.jar/0001-Nuke-Knox-HDM.patch"
+fi
 SMALI_PATCH "system" "system/priv-app/DeviceDiagnostics/DeviceDiagnostics.apk" \
     "smali/com/samsung/android/knox/hdm/HdmManager.smali" "replaceall" \
     "$HDM_VERSION" \
@@ -311,16 +324,19 @@ APPLY_PATCH "system" "system/framework/framework.jar" \
 
 # SEC_PRODUCT_FEATURE_FRAMEWORK_SUPPORT_BLOCKCHAIN_SERVICE
 SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_SUPPORT_BLOCKCHAIN_SERVICE" --delete
-SMALI_PATCH "system" "system/framework/framework.jar" \
-    "smali_classes6/com/samsung/android/ProductPackagesRune.smali" "replaceall" \
-    "SERVICE_SAMSUNG_BLOCKCHAIN:Z = true" \
-    "SERVICE_SAMSUNG_BLOCKCHAIN:Z = false"
-if [[ "$TARGET_SECURITY_CONFIG_ESE_CHIP_VENDOR" == "none" ]] && [[ "$TARGET_SECURITY_CONFIG_ESE_COS_NAME" == "none" ]]; then
-    APPLY_PATCH "system" "system/framework/services.jar" \
-        "$MODPATH/ese+blockchain/services.jar/0001-Nuke-BlockchainTZService.patch"
-else
-    APPLY_PATCH "system" "system/framework/services.jar" \
-        "$MODPATH/blockchain/services.jar/0001-Nuke-BlockchainTZService.patch"
+if grep -q "SERVICE_SAMSUNG_BLOCKCHAIN:Z = true" \
+        "$APKTOOL_DIR/system/framework/framework.jar/smali_classes6/com/samsung/android/ProductPackagesRune.smali"; then
+    SMALI_PATCH "system" "system/framework/framework.jar" \
+        "smali_classes6/com/samsung/android/ProductPackagesRune.smali" "replaceall" \
+        "SERVICE_SAMSUNG_BLOCKCHAIN:Z = true" \
+        "SERVICE_SAMSUNG_BLOCKCHAIN:Z = false"
+    if [[ "$TARGET_SECURITY_CONFIG_ESE_CHIP_VENDOR" == "none" ]] && [[ "$TARGET_SECURITY_CONFIG_ESE_COS_NAME" == "none" ]]; then
+        APPLY_PATCH "system" "system/framework/services.jar" \
+            "$MODPATH/ese+blockchain/services.jar/0001-Nuke-BlockchainTZService.patch"
+    else
+        APPLY_PATCH "system" "system/framework/services.jar" \
+            "$MODPATH/blockchain/services.jar/0001-Nuke-BlockchainTZService.patch"
+    fi
 fi
 
 # TODO get rid of the following features
@@ -331,4 +347,4 @@ LOG "- Restoring original SourceFile attribute in /system/system/framework/servi
 find "$APKTOOL_DIR/system/framework/services.jar" -type f -name "*.smali" -print0 \
     | xargs -0 -I "{}" -P "$(nproc)" sed -i "s/^\.source.*/$SOURCE_FILE_ATTR/g" "{}"
 
-unset SOURCE_FILE_ATTR
+unset SOURCE_FILE_ATTR CORE_RUNE
