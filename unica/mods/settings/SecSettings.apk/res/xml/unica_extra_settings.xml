@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen android:title="@string/unica_extra_settings_title" settings:hierarchicalParentFragment="io.mesalabs.unica.settings.UnicaSettingsFragment" settings:topLevelPreferenceKey="unica_extra_settings"
   xmlns:android="http://schemas.android.com/apk/res/android" xmlns:settings="http://schemas.android.com/apk/res-auto">
-    <EditTextPreference android:key="persist.sys.unica_blur_scale" android:title="@string/unica_blur_intensity_title" android:summary="%s" android:inputType="number" android:dialogMessage="Enter a value from 0 to 100" android:defaultValue="30" settings:controller="io.mesalabs.unica.settings.extra.BlurIntensityScalePreferenceController" />
     <SecSwitchPreference android:title="@string/unica_allow_downgrade_title" android:key="unica_allow_downgrade" settings:controller="io.mesalabs.unica.settings.pm.AppDowngradePreferenceController" />
     <SecSwitchPreference android:title="@string/unica_allow_sdkbypass_title" android:key="unica_allow_sdkbypass" settings:controller="io.mesalabs.unica.settings.pm.AppTargetSDKBypassPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_asks_title" android:key="unica_asks" settings:controller="io.mesalabs.unica.settings.pm.ASKSPreferenceController" />
@@ -9,7 +8,13 @@
     <SecSwitchPreference android:title="@string/unica_secure_ss_title" android:key="unica_secure_ss" settings:controller="io.mesalabs.unica.settings.wm.SecureScreenshotPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_ss_detection_title" android:key="unica_ss_detection" settings:controller="io.mesalabs.unica.settings.wm.CaptureDetectionPreferenceController" />
     <com.samsung.android.settings.widget.SecInsetCategoryPreference />
-    <SecDropDownPreference android:title="@string/unica_screen_resolution_title" android:key="unica_screen_resolution" android:summary="%s" android:entries="@array/unica_resolution_entries" android:entryValues="@array/unica_resolution_values" android:defaultValue="6" settings:controller="io.mesalabs.unica.settings.extra.ScreenResolutionPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_gphotos_title" android:key="unica_gphotos" settings:controller="io.mesalabs.unica.settings.extra.GooglePhotosPreferenceController" />
     <SecSwitchPreference android:title="@string/unica_games_spoof_title" android:key="unica_games_spoof" settings:controller="io.mesalabs.unica.settings.extra.GamesPropsPreferenceController" />
+    <com.samsung.android.settings.widget.SecInsetCategoryPreference />
+    <EditTextPreference android:key="persist.sys.unica_blur_scale" android:title="@string/unica_blur_intensity_title" android:summary="%s" android:inputType="number" android:dialogMessage="Enter a value from 0 to 100" android:defaultValue="30" settings:controller="io.mesalabs.unica.settings.extra.BlurIntensityScalePreferenceController" />
+    <SecDropDownPreference android:title="@string/unica_screen_resolution_title" android:key="unica_screen_resolution" android:summary="%s" android:entries="@array/unica_resolution_entries" android:entryValues="@array/unica_resolution_values" android:defaultValue="6" settings:controller="io.mesalabs.unica.settings.extra.ScreenResolutionPreferenceController" />
+    <Preference android:key="unica_ram_monitor" android:title="@string/unica_ram_monitor_title" android:summary="@string/unica_monitor_loading" android:selectable="false" android:persistent="false" settings:controller="io.mesalabs.unica.settings.extra.RamMonitorPreferenceController" />
+    <Preference android:key="unica_battery_info" android:title="@string/unica_battery_info_title" android:summary="@string/unica_monitor_loading" android:selectable="false" android:persistent="false" settings:controller="io.mesalabs.unica.settings.extra.BatteryInfoPreferenceController" />
+    <Preference android:key="unica_cpu_gpu_temp" android:title="@string/unica_cpu_gpu_temp_title" android:summary="@string/unica_monitor_loading" android:selectable="false" android:persistent="false" settings:controller="io.mesalabs.unica.settings.extra.CpuGpuTempPreferenceController" />
+    <SecSwitchPreference android:title="@string/unica_wifi_ping_stabilizer_title" android:key="wifi_scan_always_enabled" android:summary="@string/unica_wifi_ping_stabilizer_summary" android:defaultValue="false" settings:controller="io.mesalabs.unica.settings.extra.WifiPingStabilizerPreferenceController" />
 </PreferenceScreen>
