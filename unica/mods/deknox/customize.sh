@@ -8,10 +8,22 @@ else
     ABORT "Unknown SSI: $TARGET_OS_SINGLE_SYSTEM_IMAGE"
 fi
 
+DECODE_APK "system" "system/framework/framework.jar"
+CORE_RUNE="$APKTOOL_DIR/system/framework/framework.jar/smali_classes6/com/samsung/android/rune/CoreRune.smali"
+
 DELETE_FROM_WORK_DIR "system" "system/app/BlockchainBasicKit"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/bin/installd" 0 2000 755 "u:object_r:installd_exec:s0"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/bin/vdc" 0 2000 755 "u:object_r:vdc_exec:s0"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/bin/vold" 0 2000 755 "u:object_r:vold_exec:s0"
+if grep -q "KNOX_SUPPORT_DAR_SDP_OR_DUAL:Z = true" "$CORE_RUNE"; then
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/bin/installd" 0 2000 755 "u:object_r:installd_exec:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/bin/vdc" 0 2000 755 "u:object_r:vdc_exec:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/bin/vold" 0 2000 755 "u:object_r:vold_exec:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib/libandroid_servers.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib/libmdf.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib/libsqlite.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libandroid_servers.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libepm.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libmdf.so" 0 0 644 "u:object_r:system_lib_file:s0"
+    ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libsqlite.so" 0 0 644 "u:object_r:system_lib_file:s0"
+fi
 # Support legacy sdFAT kernel drivers (pre-API 35)
 # Check unica/patches/legacy/customize.sh for more info.
 if [ "$TARGET_PLATFORM_SDK_VERSION" -lt "35" ] && \
@@ -40,31 +52,24 @@ DELETE_FROM_WORK_DIR "system" "system/etc/permissions/signature-permissions-com.
 DELETE_FROM_WORK_DIR "system" "system/etc/sysconfig/preinstalled-packages-com.samsung.android.coldwalletservice.xml"
 DELETE_FROM_WORK_DIR "system" "system/lib/android.hardware.weaver@1.0.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/hidl_comm_ddar_client.so"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib/libandroid_servers.so" 0 0 644 "u:object_r:system_lib_file:s0"
 DELETE_FROM_WORK_DIR "system" "system/lib/libdualdar.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libepm.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libhermes_cred.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libkeyutils.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libknox_filemanager.so"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib/libmdf.so" 0 0 644 "u:object_r:system_lib_file:s0"
 DELETE_FROM_WORK_DIR "system" "system/lib/libmdfpp_req.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libpersona.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libsdp_crypto.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libsdp_kekm.so"
 DELETE_FROM_WORK_DIR "system" "system/lib/libsdp_sdk.so"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib/libsqlite.so" 0 0 644 "u:object_r:system_lib_file:s0"
 DELETE_FROM_WORK_DIR "system" "system/lib/vendor.samsung.hardware.tlc.ddar@1.0.so"
 DELETE_FROM_WORK_DIR "system" "system/lib64/android.hardware.weaver@1.0.so"
 DELETE_FROM_WORK_DIR "system" "system/lib64/hidl_comm_ddar_client.so"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libandroid_servers.so" 0 0 644 "u:object_r:system_lib_file:s0"
 DELETE_FROM_WORK_DIR "system" "system/lib64/libdualdar.so"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libepm.so" 0 0 644 "u:object_r:system_lib_file:s0"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libmdf.so" 0 0 644 "u:object_r:system_lib_file:s0"
 DELETE_FROM_WORK_DIR "system" "system/lib64/libmdfpp_req.so"
 DELETE_FROM_WORK_DIR "system" "system/lib64/libsdp_crypto.so"
 DELETE_FROM_WORK_DIR "system" "system/lib64/libsdp_kekm.so"
 DELETE_FROM_WORK_DIR "system" "system/lib64/libsdp_sdk.so"
-ADD_TO_WORK_DIR "$DONOR" "system" "system/lib64/libsqlite.so" 0 0 644 "u:object_r:system_lib_file:s0"
 DELETE_FROM_WORK_DIR "system" "system/lib64/vendor.samsung.hardware.tlc.ddar@1.0.so"
 DELETE_FROM_WORK_DIR "system" "system/priv-app/HdmApk"
 DELETE_FROM_WORK_DIR "system" "system/priv-app/KnoxFrameBufferProvider"
@@ -108,9 +113,6 @@ if [[ "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" != "$TARGET_PRODUCT_SHIPPING_API_LEVE
         "$SOURCE_PRODUCT_SHIPPING_API_LEVEL" \
         > /dev/null
 fi
-
-DECODE_APK "system" "system/framework/framework.jar"
-CORE_RUNE="$APKTOOL_DIR/system/framework/framework.jar/smali_classes6/com/samsung/android/rune/CoreRune.smali"
 
 # SEC_PRODUCT_FEATURE_KNOX_SUPPORT_SDP
 if grep -q "KNOX_SUPPORT_DAR_SDP:Z = true" "$CORE_RUNE"; then
