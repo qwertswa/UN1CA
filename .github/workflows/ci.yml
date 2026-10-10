@@ -2,7 +2,19 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      changelog:
+        description: 'Changelog'
+        required: false
+        default: ''
+        type: string
+      security_patch:
+        description: 'Security patch date (YYYY-MM-DD)'
+        required: true
+        type: string
+
   pull_request:
+
   push:
     branches:
       - 'a23'
@@ -145,10 +157,82 @@ jobs:
             echo "- **SHA256**: \`$SHA256\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Update manifest in static_resources
+        if: github.event_name != 'pull_request'
+        env:
+          GH_PAT: ${{ secrets.STATIC_RESOURCES_TOKEN }}
+          CHANGELOG_INPUT: ${{ inputs.changelog }}
+          SECURITY_PATCH_INPUT: ${{ inputs.security_patch }}
+        run: |
+          set -euo pipefail
+          ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "UN1CA_*.zip" | head -n 1)"
+          if [ -z "$ZIP" ] || [ ! -f "$ZIP" ]; then
+            echo "Error: Flashable zip not found in $OUT_DIR" >&2
+            exit 1
+          fi
+          git clone "https://x-access-token:${GH_PAT}@github.com/qwertswa/static_resources.git" sr
+          cd sr
+          git fetch origin a23 2>/dev/null && git checkout -B a23 origin/a23 || git checkout -B a23
+          mkdir -p updates
+          python3 - "$ZIP" <<'PY'
+          import json, os, sys, time
+          zp = sys.argv[1]
+          e = os.environ
+          p = "updates/manifest.json"
+          data = json.load(open(p)) if os.path.exists(p) else {"response": []}
+          entry = {
+              "datetime": int(e["ROM_BUILD_TIMESTAMP"]),
+              "device": e["TARGET_CODENAME"],
+              "filename": e["ZIP_NAME"],
+              "id": e["ZIP_SHA256"],
+              "patch": e["SECURITY_PATCH_INPUT"],
+              "size": os.path.getsize(zp),
+              "urls": [
+                  "https://pixeldrain.com/api/file/"
+                  + e["PIXELDRAIN_LINK"].rsplit("/", 1)[-1]
+                  + "?download"
+              ],
+              "version": e["ROM_VERSION"],
+              "incremental": 0,
+          }
+          if not any(x["id"] == entry["id"] for x in data["response"]):
+              data["response"].append(entry)
+          json.dump(data, open(p, "w"), indent=2)
+          PY
+          if [ -n "$CHANGELOG_INPUT" ]; then
+            {
+              echo "UN1CA ${ROM_VERSION} For ${TARGET_CODENAME}"
+              echo
+              printf '%s\n' "$CHANGELOG_INPUT" | sed 's/ \/ /\n/g'
+            } > "updates/${ROM_VERSION}.txt"
+          else
+            if [ ! -f "updates/${ROM_VERSION}.txt" ]; then
+              echo "UN1CA ${ROM_VERSION} For ${TARGET_CODENAME}" \
+                > "updates/${ROM_VERSION}.txt"
+            fi
+          fi
+
+          echo "============================================="
+          echo "Changelog:"
+          echo "============================================="
+          cat "updates/${ROM_VERSION}.txt"
+          echo "============================================="
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add updates
+          git commit -m "Add ${ROM_VERSION} (${TARGET_CODENAME})" || exit 0
+          git pull --rebase origin a23 || true
+          git remote set-url origin "https://x-access-token:${{ secrets.STATIC_RESOURCES_TOKEN }}@github.com/qwertswa/static_resources.git"
+          git push origin a23
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.event_name != 'pull_request'
         with:
+          repository: qwertswa/static_resources
+          token: ${{ secrets.STATIC_RESOURCES_TOKEN }}
+          target_commitish: a23
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || env.ROM_VERSION }}
           name: UN1CA ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || env.ROM_VERSION }}
           body: |
