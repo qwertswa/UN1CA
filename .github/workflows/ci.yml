@@ -35,8 +35,7 @@ jobs:
       PART_SIZE: 1610612736
       TF_TAG: target-files
       TF_KEEP: 3
-      INC_SOURCES: 2
-      # Gambar banner untuk release notes (commit file ini ke repo; kosongkan/hapus file untuk menonaktifkan)
+      INC_SOURCES: 1
       RELEASE_IMAGE: .github/release-banner.png
 
     strategy:
@@ -80,33 +79,23 @@ jobs:
           echo -n "${{ secrets.PLATFORM_KEY_PEM }}" | base64 --decode > security/unica_platform.x509.pem
           echo -n "${{ secrets.OTA_KEY_PK8 }}" | base64 --decode > security/unica_ota.pk8
           echo -n "${{ secrets.OTA_KEY_PEM }}" | base64 --decode > security/unica_ota.x509.pem
-
+          
       - name: Set up JDK 17
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: Generate build config
-        run: |
-          source ./buildenv.sh ${{ matrix.target }}
-          {
-            echo "DEBUG=$DEBUG"
-            echo "SRC_DIR=$SRC_DIR"
-            echo "OUT_DIR=$OUT_DIR"
-            echo "ODIN_DIR=$ODIN_DIR"
-            echo "FW_DIR=$FW_DIR"
-            echo "TOOLS_DIR=$TOOLS_DIR"
-            echo "APKTOOL_DIR=$APKTOOL_DIR"
-            echo "WORK_DIR=$WORK_DIR"
-            echo "TMP_DIR=$TMP_DIR"
-          } >> "$GITHUB_ENV"
-          sed -e "/Automatically/d" -e "s/\"//g" "$OUT_DIR/config.sh" >> "$GITHUB_ENV"
-          echo "$TOOLS_DIR/bin" >> "$GITHUB_PATH"
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build dependencies
-        run: ./scripts/build_dependencies.sh
+        shell: bash
+        run: |
+          set -e
+          source ./buildenv.sh "${{ matrix.target }}"
+          ./scripts/build_dependencies.sh
 
       - name: Download stock firmwares
         uses: nick-fields/retry@v4
@@ -114,21 +103,32 @@ jobs:
           timeout_minutes: 60
           max_attempts: 3
           retry_on: error
-          command: ./scripts/download_fw.sh
+          command: bash -e -o pipefail -c 'source ./buildenv.sh "${{ matrix.target }}" && ./scripts/download_fw.sh'
 
       - name: Extract stock firmwares
-        run: ./scripts/extract_fw.sh
+        shell: bash
+        run: |
+          set -e
+          source ./buildenv.sh "${{ matrix.target }}"
+          ./scripts/extract_fw.sh
+
+      - name: Add swapspace
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 12
 
       - name: Build ROM
-        run: ./scripts/make_rom.sh
-
-      # Pembuatan zip hanya butuh target_files zip, tools, dan key. Firmware stock, work_dir, dsb.
-      # sudah tidak dipakai lagi, dan menghapusnya membebaskan puluhan GB supaya 7z/signapk
-      # (yang butuh beberapa salinan zip 5 GB sekaligus) tidak kehabisan disk.
-      - name: Free disk space before packaging
         run: |
-          set -euo pipefail
-          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" | head -n 1)"
+          source ./buildenv.sh ${{ matrix.target }}
+          ./scripts/make_rom.sh
+
+      - name: Free disk space before packaging
+        shell: bash
+        run: |
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          set -u
+          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" -print -quit)"
           if [ -z "$TARGET_FILES_ZIP" ] || [ ! -f "$TARGET_FILES_ZIP" ]; then
             echo "Error: target-files zip not found in $OUT_DIR" >&2
             exit 1
@@ -138,16 +138,18 @@ jobs:
           df -h / | tail -n 1
 
       - name: Build flashable zip
+        shell: bash
         run: |
-          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" | head -n 1)"
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          set -u
+          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" -print -quit)"
           if [ -z "$TARGET_FILES_ZIP" ] || [ ! -f "$TARGET_FILES_ZIP" ]; then
             echo "Error: target-files zip not found in $OUT_DIR" >&2
             exit 1
           fi
           ./scripts/build_flashable_zip.sh "$TARGET_FILES_ZIP"
 
-      # gh ikut terhapus oleh step "Free disk space", jadi dipasang ulang di sini
-      # (dipindah ke atas karena sekarang dipakai untuk mengambil target_files lama).
       - name: Install GitHub CLI
         if: github.event_name != 'pull_request'
         run: |
@@ -159,16 +161,20 @@ jobs:
           fi
           gh --version
 
-      # Buat zip INCREMENTAL dari target_files rilis-rilis sebelumnya (disimpan di tag $TF_TAG).
-      # Kalau belum ada target_files lama (rilis pertama setelah perubahan ini), step ini dilewati
-      # dan hanya zip full yang dirilis.
       - name: Build incremental zips
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.STATIC_RESOURCES_TOKEN }}
+        shell: bash
         run: |
-          set -euo pipefail
-          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" | head -n 1)"
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          set -u
+          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" -print -quit)"
+          if [ -z "$TARGET_FILES_ZIP" ] || [ ! -f "$TARGET_FILES_ZIP" ]; then
+            echo "Error: target-files zip not found in $OUT_DIR" >&2
+            exit 1
+          fi
           CUR_NAME="$(basename "$TARGET_FILES_ZIP")"
           PREV_DIR="$RUNNER_TEMP/prev"
           mkdir -p "$PREV_DIR"
@@ -183,7 +189,6 @@ jobs:
           fi
           echo "Found release: $VIEW_OUT"
 
-          # "<createdAt> <asset name>" -> newest first -> strip the .NN part suffix -> unique base names
           gh release view "$TF_TAG" --repo "$STATIC_REPO" --json assets \
             -q '.assets[] | "\(.createdAt) \(.name)"' \
             | grep -E " ${{ matrix.target }}_.*-target_files\.zip\.[0-9]{2}$" \
@@ -209,13 +214,13 @@ jobs:
             echo "::endgroup::"
           done < "$RUNNER_TEMP/bases.txt"
 
-      # Zip yang lebih kecil dari PART_SIZE (mis. zip INCREMENTAL) TIDAK dipecah dan diunggah dengan
-      # nama aslinya, sama seperti UN1CA resmi. Hanya zip yang lebih besar dipecah jadi .00, .01, ...
-      # Baris release_list.txt: nama|ukuran|sha256|incremental|jumlah_bagian (0 = tidak dipecah)
       - name: Prepare release assets (split flashable zips)
         if: github.event_name != 'pull_request'
+        shell: bash
         run: |
-          set -euo pipefail
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          set -u
           LIST="$OUT_DIR/release_list.txt"
           : > "$LIST"
 
@@ -231,12 +236,10 @@ jobs:
             ZIP_SIZE="$(stat -c %s "$ZIP")"
             ZIP_SHA256="$(sha256sum "$ZIP" | cut -d ' ' -f 1)"
             BUILD_INFO="$(unzip -p "$ZIP" build_info.txt)"
-            # 0 for full zips, source build timestamp for incremental zips
+
             ZIP_INC="$(grep '^incremental=' <<< "$BUILD_INFO" | cut -d '=' -f 2 -s || true)"
             ZIP_TS="$(grep '^timestamp=' <<< "$BUILD_INFO" | cut -d '=' -f 2 -s || true)"
 
-            # Updater app: incremental=0 -> shown as a FULL rom; incremental=N -> shown only on the
-            # build whose timestamp is N. So the value in build_info.txt must match the file name.
             NAME_INC="$(sed -n 's/.*-INCREMENTAL_\([0-9][0-9]*\)-sign\.zip$/\1/p' <<< "$ZIP_NAME")"
             if [ -n "$NAME_INC" ] && [ "${ZIP_INC:-0}" != "$NAME_INC" ]; then
               echo "Error: $ZIP_NAME is named INCREMENTAL_$NAME_INC but build_info.txt says incremental='${ZIP_INC:-}'" >&2
@@ -262,8 +265,6 @@ jobs:
             else
               ZIP_PARTS=0
             fi
-            echo "$ZIP_SHA256  $ZIP_NAME" > "$ZIP.sha256"
-
             echo "$ZIP_NAME|$ZIP_SIZE|$ZIP_SHA256|${ZIP_INC:-0}|$ZIP_PARTS" >> "$LIST"
             echo "$ZIP_NAME: $ZIP_SIZE bytes, incremental=${ZIP_INC:-0}, parts=$ZIP_PARTS (0 = single file)"
           done
@@ -275,8 +276,11 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.STATIC_RESOURCES_TOKEN }}
+        shell: bash
         run: |
-          set -euo pipefail
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          set -u
           TAG="$RELEASE_TAG"
 
           if ! gh release view "$TAG" --repo "$STATIC_REPO" >/dev/null 2>&1; then
@@ -296,8 +300,7 @@ jobs:
           To install a split zip manually, join the parts first:
 
               cat UN1CA_<version>_<device>-sign.zip.* > UN1CA_<version>_<device>-sign.zip
-
-          The SHA-256 of every zip is in the matching .sha256 file."
+          "
             gh release create "$TAG" --repo "$STATIC_REPO" "${TARGET[@]}" \
               --title "UN1CA $TAG" --notes "$NOTES" \
               || gh release view "$TAG" --repo "$STATIC_REPO" >/dev/null
@@ -335,11 +338,19 @@ jobs:
             upload "$RELEASE_IMAGE"
           fi
 
+          # Remove legacy standalone checksum assets; checksums remain in the manifest/summary.
+          gh release view "$TAG" --repo "$STATIC_REPO" --json assets \
+            -q '.assets[] | select(.name | endswith(".zip.sha256")) | .name' \
+            | while IFS= read -r asset; do
+                [ -n "$asset" ] || continue
+                echo "Removing unused checksum asset: $asset"
+                gh release delete-asset "$TAG" "$asset" --repo "$STATIC_REPO" --yes || true
+              done
+
           while IFS='|' read -r ZIP_NAME ZIP_SIZE ZIP_SHA256 ZIP_INC ZIP_PARTS; do
             while IFS= read -r a; do
               upload "$OUT_DIR/$a"
             done < <(asset_names "$ZIP_NAME" "$ZIP_PARTS")
-            upload "$OUT_DIR/$ZIP_NAME.sha256"
           done < "$RELEASE_LIST"
 
           gh release view "$TAG" --repo "$STATIC_REPO" --json assets \
@@ -374,16 +385,20 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           done < "$RELEASE_LIST"
 
-      # Simpan target_files build ini supaya rilis berikutnya bisa membuat zip INCREMENTAL darinya.
-      # Hanya build yang persis sama dengan yang terpasang di HP yang bisa dipakai sebagai sumber,
-      # jadi file ini harus asli dari build yang dirilis (membangun ulang commit lama tidak cukup).
       - name: Store target-files for future incremental zips
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.STATIC_RESOURCES_TOKEN }}
+        shell: bash
         run: |
-          set -euo pipefail
-          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" | head -n 1)"
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          set -u
+          TARGET_FILES_ZIP="$(find "$OUT_DIR" -maxdepth 1 -name "${{ matrix.target }}_*-target_files.zip" -print -quit)"
+          if [ -z "$TARGET_FILES_ZIP" ] || [ ! -f "$TARGET_FILES_ZIP" ]; then
+            echo "Error: target-files zip not found in $OUT_DIR" >&2
+            exit 1
+          fi
           CUR_NAME="$(basename "$TARGET_FILES_ZIP")"
 
           if ! gh release view "$TF_TAG" --repo "$STATIC_REPO" >/dev/null 2>&1; then
@@ -429,15 +444,17 @@ jobs:
           GH_PAT: ${{ secrets.STATIC_RESOURCES_TOKEN }}
           CHANGELOG_INPUT: ${{ inputs.changelog }}
           SECURITY_PATCH_INPUT: ${{ inputs.security_patch }}
+        shell: bash
         run: |
-          set -euo pipefail
+          set -eo pipefail
+          source ./buildenv.sh "${{ matrix.target }}"
+          export ROM_VERSION ROM_BUILD_TIMESTAMP TARGET_CODENAME
+          set -u
           git clone "https://x-access-token:${GH_PAT}@github.com/${STATIC_REPO}.git" sr
           cd sr
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Both matrix jobs write the same manifest.json, so always start from the latest
-          # remote state and retry if the push is rejected.
           for attempt in 1 2 3 4 5 6; do
             if git fetch origin "$MANIFEST_BRANCH" 2>/dev/null; then
               git checkout -q -B "$MANIFEST_BRANCH" "origin/$MANIFEST_BRANCH"
@@ -458,7 +475,6 @@ jobs:
               size, parts = int(size), int(parts)
               base = "https://github.com/%s/releases/download/%s/%s" % (
                   e["STATIC_REPO"], e["RELEASE_TAG"], name)
-              # single file: plain name (like official UN1CA); split zip: .00, .01, ...
               urls = [base] if parts == 0 else ["%s.%02d" % (base, i) for i in range(parts)]
               entry = {
                   "datetime": int(e["ROM_BUILD_TIMESTAMP"]),
